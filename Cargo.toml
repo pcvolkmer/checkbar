@@ -1,0 +1,28 @@
+[package]
+name = "checkbar"
+version = "0.1.0"
+edition = "2021"
+author = "Paul-Christian Volkmer <code@pcvolkmer.de>"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dirs = "4"
+serde = { version = "1", features = ["derive"] }
+chrono = { version = "*", features = ["serde"] }
+tokio = { version = "1", features = ["full"] }
+toml = "*"
+
+[dependencies.reqwest]
+version = "*"
+features = ["json", "rustls-tls"]
+default-features = false
+
+[dev-dependencies]
+serde_derive = "1"
+
+[profile.release]
+opt-level = "s"
+codegen-units = 1
+lto = "thin"
+strip = "debuginfo"

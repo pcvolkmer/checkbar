@@ -1,0 +1,34 @@
+= Checkbar
+
+This tool shows up/warn/down state of configured hosts or applications using i3bar input protocol.
+
+image::checkbar.png[]
+
+== Usage
+
+You should create a configuration file `.checkbar.toml` in your home directory, e.g.
+
+----
+# Update interval in seconds. Default value if not set is 60 sec.
+interval = 60
+
+[[checks]]
+name = "Host 1"
+url = "https://host1.example.com"
+
+[[checks]]
+name = "Host 2"
+url = "https://host2.example.com"
+
+[[checks]]
+name = "App 1"
+url = "https://app.example.com/actuator/health"
+check_type = "Actuator"
+----
+
+Each host or application to be checked constists of `name` and `url`.
+
+You can optionally specify `check_type`:
+
+* `Html`: Default value, checks if a request is succeessful and returns HTTP OK - 200.
+* `Actuator`: Like `Html`, but checks if _Actuator_ shows that the application is up and running.
