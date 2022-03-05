@@ -32,3 +32,19 @@ You can optionally specify `check_type`:
 
 * `Html`: Default value, checks if a request is succeessful and returns HTTP OK - 200.
 * `Actuator`: Like `Html`, but checks if _Actuator_ shows that the application is up and running.
+
+=== Execute commands
+
+_This feature is experimental and starts further commands only after previous commands have been finished._
+
+You can also specify a command to be executed when a mouse click occurs on a checked host.
+Use `click_cmd` to specifiy the command to be executed, e.g.
+
+----
+...
+[[checks]]
+name = "Host 1"
+url = "http://host1.example.com"
+click_cmd = "xterm -e ssh admin@host1.example.com"
+...
+----

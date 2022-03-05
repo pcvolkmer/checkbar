@@ -13,6 +13,7 @@ struct CheckConfig {
     name: String,
     url: String,
     check_type: Option<CheckType>,
+    click_cmd: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -24,6 +25,11 @@ enum CheckType {
 #[derive(Deserialize)]
 struct ActuatorResponse {
     status: String,
+}
+
+#[derive(Deserialize)]
+struct ClickEvent {
+    name: String,
 }
 
 struct CheckResult {
@@ -40,8 +46,8 @@ impl Display for CheckResult {
         };
         write!(
             f,
-            "{{\"full_text\":\"{}\",\"separator_block_width\":16,\"color\":\"{}\"}}",
-            self.name, color
+            "{{\"full_text\":\"{}\",\"name\":\"{}\",\"separator_block_width\":16,\"color\":\"{}\"}}",
+            self.name, self.name, color
         )
     }
 }
@@ -96,30 +102,86 @@ async fn print_states(check_configs: &[CheckConfig]) {
     println!("{}],", entries.join(","));
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() {
-    println!("{{\"version\":1,\"click_events\":false}}");
-    println!("[");
-    loop {
-        let home_dir = dirs::home_dir().unwrap();
-        let config = match std::fs::read_to_string(format!(
-            "{}/.checkbar.toml",
-            home_dir.to_str().unwrap_or("")
-        )) {
-            Ok(config) => match toml::from_str(config.as_str()) {
-                Ok(config) => config,
-                Err(_e) => Config {
-                    interval: None,
-                    checks: vec![],
-                },
-            },
+async fn get_config() -> Config {
+    let home_dir = dirs::home_dir().unwrap();
+    match std::fs::read_to_string(format!(
+        "{}/.checkbar.toml",
+        home_dir.to_str().unwrap_or("")
+    )) {
+        Ok(config) => match toml::from_str(config.as_str()) {
+            Ok(config) => config,
             Err(_e) => Config {
                 interval: None,
                 checks: vec![],
             },
-        };
-
-        print_states(&config.checks).await;
-        std::thread::sleep(Duration::from_secs(config.interval.unwrap_or(60)));
+        },
+        Err(_e) => Config {
+            interval: None,
+            checks: vec![],
+        },
     }
+}
+
+async fn get_click_cmd(name: String) -> Option<String> {
+    for check in get_config().await.checks {
+        if check.name == name {
+            return check.click_cmd;
+        }
+    }
+    None
+}
+
+async fn run_click_cmd(cmd: String) {
+    let _r = match std::process::Command::new("sh")
+        .stdin(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+    {
+        Ok(mut child) => {
+            use std::io::Write;
+            let _r = child.stdin.as_mut().unwrap().write_all(cmd.as_bytes());
+            child.wait()
+        }
+        Err(e) => Err(e),
+    };
+}
+
+#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+async fn main() {
+    println!("{{\"version\":1,\"click_events\":true}}");
+    println!("[");
+
+    let inputs = tokio::task::spawn(async {
+        let stdin = std::io::stdin();
+        loop {
+            let mut input = String::new();
+
+            if stdin.read_line(&mut input).is_err() {
+                continue;
+            }
+
+            if input.is_empty() {
+                continue;
+            }
+
+            // Remove leading comma
+            let input = input.replace(",{", "{");
+
+            if let Ok(click_event) = serde_json::from_str::<ClickEvent>(input.as_str()) {
+                if let Some(click_cmd) = get_click_cmd(click_event.name).await {
+                    run_click_cmd(click_cmd).await;
+                }
+            }
+        }
+    });
+
+    let checks = tokio::task::spawn(async {
+        loop {
+            let config = get_config().await;
+            print_states(&config.checks).await;
+            std::thread::sleep(Duration::from_secs(config.interval.unwrap_or(60)));
+        }
+    });
+
+    let _r = tokio::join!(inputs, checks);
 }

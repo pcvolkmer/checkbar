@@ -2,13 +2,13 @@
 name = "checkbar"
 version = "0.1.0"
 edition = "2021"
-author = "Paul-Christian Volkmer <code@pcvolkmer.de>"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 dirs = "4"
 serde = { version = "1", features = ["derive"] }
+serde_json = "*"
 chrono = { version = "*", features = ["serde"] }
 tokio = { version = "1", features = ["full"] }
 toml = "*"
