@@ -132,17 +132,11 @@ async fn get_click_cmd(name: String) -> Option<String> {
 }
 
 async fn run_click_cmd(cmd: String) {
-    let _r = match std::process::Command::new("sh")
+    if let Ok(mut child) = std::process::Command::new("sh")
         .stdin(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-    {
-        Ok(mut child) => {
+        .spawn() {
             use std::io::Write;
-            let _r = child.stdin.as_mut().unwrap().write_all(cmd.as_bytes());
-            child.wait()
-        }
-        Err(e) => Err(e),
+            let _ = child.stdin.as_mut().unwrap().write_all(cmd.as_bytes());
     };
 }
 
