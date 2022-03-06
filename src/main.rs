@@ -1,6 +1,9 @@
 use serde::Deserialize;
 use std::fmt::{Display, Formatter, Result};
+use std::fs;
+use std::process;
 use std::time::Duration;
+use tokio::task;
 
 #[derive(Deserialize)]
 struct Config {
@@ -104,7 +107,7 @@ async fn print_states(check_configs: &[CheckConfig]) {
 
 async fn get_config() -> Config {
     let home_dir = dirs::home_dir().unwrap();
-    match std::fs::read_to_string(format!(
+    match fs::read_to_string(format!(
         "{}/.checkbar.toml",
         home_dir.to_str().unwrap_or("")
     )) {
@@ -132,11 +135,12 @@ async fn get_click_cmd(name: String) -> Option<String> {
 }
 
 async fn run_click_cmd(cmd: String) {
-    if let Ok(mut child) = std::process::Command::new("sh")
-        .stdin(std::process::Stdio::piped())
-        .spawn() {
-            use std::io::Write;
-            let _ = child.stdin.as_mut().unwrap().write_all(cmd.as_bytes());
+    if let Ok(mut child) = process::Command::new("sh")
+        .stdin(process::Stdio::piped())
+        .spawn()
+    {
+        use std::io::Write;
+        let _ = child.stdin.as_mut().unwrap().write_all(cmd.as_bytes());
     };
 }
 
@@ -145,7 +149,7 @@ async fn main() {
     println!("{{\"version\":1,\"click_events\":true}}");
     println!("[");
 
-    let inputs = tokio::task::spawn(async {
+    let inputs = task::spawn(async {
         let stdin = std::io::stdin();
         loop {
             let mut input = String::new();
@@ -169,7 +173,7 @@ async fn main() {
         }
     });
 
-    let checks = tokio::task::spawn(async {
+    let checks = task::spawn(async {
         loop {
             let config = get_config().await;
             print_states(&config.checks).await;
