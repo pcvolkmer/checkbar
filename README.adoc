@@ -33,6 +33,21 @@ You can optionally specify `check_type`:
 * `Html`: Default value, checks if a request is succeessful and returns HTTP OK - 200.
 * `Actuator`: Like `Html`, but checks if _Actuator_ shows that the application is up and running.
 
+=== Colors
+
+To change the colors, use the following configuration. As an example the colors of the default configuration are shown.
+
+----
+...
+[colors]
+up = "#00FF00"
+warn = "#FFFF00"
+down = "#FF0000"
+...
+----
+
+The color configuration is optional. If used, all colors must be specified.
+
 === Execute commands
 
 _This feature is still experimental._

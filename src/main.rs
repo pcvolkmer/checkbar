@@ -8,7 +8,15 @@ use tokio::task;
 #[derive(Deserialize)]
 struct Config {
     interval: Option<u64>,
+    colors: Option<ColorConfig>,
     checks: Vec<CheckConfig>,
+}
+
+#[derive(Deserialize)]
+struct ColorConfig {
+    up: String,
+    warn: String,
+    down: String,
 }
 
 #[derive(Deserialize)]
@@ -42,10 +50,18 @@ struct CheckResult {
 
 impl Display for CheckResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let color_config = match get_config().colors {
+            Some(color_config) => color_config,
+            None => ColorConfig {
+                up: String::from("#00FF00"),
+                warn: String::from("#FFFF00"),
+                down: String::from("#FF0000"),
+            },
+        };
         let color = match &self.state {
-            CheckState::Up => "#00FF00",
-            CheckState::Warn => "#FFFF00",
-            CheckState::Down => "#FF0000",
+            CheckState::Up => color_config.up,
+            CheckState::Warn => color_config.warn,
+            CheckState::Down => color_config.down,
         };
         write!(
             f,
@@ -105,7 +121,7 @@ async fn print_states(check_configs: &[CheckConfig]) {
     println!("{}],", entries.join(","));
 }
 
-async fn get_config() -> Config {
+fn get_config() -> Config {
     let home_dir = dirs::home_dir().unwrap();
     match fs::read_to_string(format!(
         "{}/.checkbar.toml",
@@ -115,18 +131,20 @@ async fn get_config() -> Config {
             Ok(config) => config,
             Err(_e) => Config {
                 interval: None,
+                colors: None,
                 checks: vec![],
             },
         },
-        Err(_e) => Config {
+        Err(_) => Config {
             interval: None,
+            colors: None,
             checks: vec![],
         },
     }
 }
 
 async fn get_click_cmd(name: String) -> Option<String> {
-    for check in get_config().await.checks {
+    for check in get_config().checks {
         if check.name == name {
             return check.click_cmd;
         }
@@ -175,7 +193,7 @@ async fn main() {
 
     let checks = task::spawn(async {
         loop {
-            let config = get_config().await;
+            let config = get_config();
             print_states(&config.checks).await;
             std::thread::sleep(Duration::from_secs(config.interval.unwrap_or(60)));
         }
