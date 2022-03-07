@@ -41,6 +41,7 @@ struct ActuatorResponse {
 #[derive(Deserialize)]
 struct ClickEvent {
     name: String,
+    button: u8,
 }
 
 struct CheckResult {
@@ -184,6 +185,10 @@ async fn main() {
             let input = input.replace(",{", "{");
 
             if let Ok(click_event) = serde_json::from_str::<ClickEvent>(input.as_str()) {
+                // Ignore click event if not left mouse button
+                if click_event.button != 1 {
+                    continue;
+                };
                 if let Some(click_cmd) = get_click_cmd(click_event.name).await {
                     run_click_cmd(click_cmd).await;
                 }

@@ -50,8 +50,6 @@ The color configuration is optional. If used, all colors must be specified.
 
 === Execute commands
 
-_This feature is still experimental._
-
 You can also specify a command to be executed when a mouse click occurs on a checked host.
 Use `click_cmd` to specifiy the command to be executed, e.g.
 
