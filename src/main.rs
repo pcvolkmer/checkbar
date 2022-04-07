@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::fmt::{Display, Formatter, Result};
+use std::env;
 use std::fs;
 use std::process;
 use std::time::Duration;
@@ -122,12 +123,15 @@ async fn print_states(check_configs: &[CheckConfig]) {
     println!("{}],", entries.join(","));
 }
 
+fn get_config_file() -> String {
+    match env::args().nth(1) {
+        Some(config_file) => config_file,
+        None => format!("{}/.checkbar.toml", dirs::home_dir().unwrap().to_str().unwrap_or(""))
+    }
+}
+
 fn get_config() -> Config {
-    let home_dir = dirs::home_dir().unwrap();
-    match fs::read_to_string(format!(
-        "{}/.checkbar.toml",
-        home_dir.to_str().unwrap_or("")
-    )) {
+    match fs::read_to_string(get_config_file()) {
         Ok(config) => match toml::from_str(config.as_str()) {
             Ok(config) => config,
             Err(_e) => Config {
