@@ -26,11 +26,11 @@ url = "https://app.example.com/actuator/health"
 check_type = "Actuator"
 ----
 
-Each host or application to be checked constists of `name` and `url`.
+Each host or application to be checked consists of `name` and `url`.
 
 You can optionally specify `check_type`:
 
-* `Html`: Default value, checks if a request is succeessful and returns HTTP OK - 200.
+* `Html`: Default value, checks if a request is successful and returns HTTP OK - 200.
 * `Actuator`: Like `Html`, but checks if _Actuator_ shows that the application is up and running.
 
 To use more than one configuration, pass the config file location as first argument to the application.
@@ -57,7 +57,7 @@ The color configuration is optional. If used, all colors must be specified.
 === Execute commands
 
 You can also specify a command to be executed when a mouse click occurs on a checked host.
-Use `click_cmd` to specifiy the command to be executed, e.g.
+Use `click_cmd` to specify the command to be executed, e.g.
 
 ----
 ...
