@@ -86,7 +86,7 @@ async fn check_host(check_config: &CheckConfig) -> CheckResult {
                 match check_config.check_type {
                     Some(CheckType::Actuator) => match r.json::<ActuatorResponse>().await {
                         Ok(ar) => {
-                            if ar.status == "OK" {
+                            if ar.status == "UP" {
                                 CheckState::Up
                             } else {
                                 CheckState::Warn
