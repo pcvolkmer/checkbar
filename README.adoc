@@ -32,6 +32,9 @@ You can optionally specify `check_type`:
 
 * `Html`: Default value, checks if a request is successful and returns HTTP OK - 200.
 * `Actuator`: Like `Html`, but checks if _Actuator_ shows that the application is up and running.
+  ** `Up`: Actuator response indicates, application is up and running.
+  ** `Warn`: Got response but it is not Actuator health `UP` response or redirect.
+  ** `Down`: No response.
 
 To use more than one configuration, pass the config file location as first argument to the application.
 
