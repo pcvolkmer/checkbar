@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::json;
-use std::fmt::{Display, Formatter, Result};
 use std::env;
+use std::fmt::{Display, Formatter, Result};
 use std::fs;
 use std::process;
 use std::time::Duration;
@@ -123,16 +123,22 @@ async fn print_states(check_configs: &[CheckConfig]) {
     for check_config in check_configs {
         entries.push(format!("{}", check_host(check_config).await));
     }
-    entries.push(json!({
-        "full_text": chrono::Local::now().format("%H:%M").to_string()
-    }).to_string());
+    entries.push(
+        json!({
+            "full_text": chrono::Local::now().format("%H:%M").to_string()
+        })
+        .to_string(),
+    );
     println!("{}],", entries.join(","));
 }
 
 fn get_config_file() -> String {
     match env::args().nth(1) {
         Some(config_file) => config_file,
-        None => format!("{}/.checkbar.toml", dirs::home_dir().unwrap().to_str().unwrap_or(""))
+        None => format!(
+            "{}/.checkbar.toml",
+            dirs::home_dir().unwrap().to_str().unwrap_or("")
+        ),
     }
 }
 
@@ -175,10 +181,13 @@ async fn run_click_cmd(cmd: String) {
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() {
-    println!("{}", json!({
-        "version": 1,
-        "click_events": true
-    }));
+    println!(
+        "{}",
+        json!({
+            "version": 1,
+            "click_events": true
+        })
+    );
     println!("[");
 
     let inputs = task::spawn(async {
