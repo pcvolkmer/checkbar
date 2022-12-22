@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_json::json;
 use std::fmt::{Display, Formatter, Result};
 use std::env;
 use std::fs;
@@ -65,10 +66,16 @@ impl Display for CheckResult {
             CheckState::Warn => color_config.warn,
             CheckState::Down => color_config.down,
         };
+
         write!(
             f,
-            "{{\"full_text\":\"{}\",\"name\":\"{}\",\"separator_block_width\":16,\"color\":\"{}\"}}",
-            self.name, self.name, color
+            "{}",
+            json!({
+                "full_text": self.name,
+                "name": self.name,
+                "separator_block_width": 16,
+                "color": color
+            })
         )
     }
 }
@@ -116,10 +123,9 @@ async fn print_states(check_configs: &[CheckConfig]) {
     for check_config in check_configs {
         entries.push(format!("{}", check_host(check_config).await));
     }
-    entries.push(format!(
-        "{{\"full_text\":\"check@{}\"}}",
-        chrono::Local::now().format("%H:%M")
-    ));
+    entries.push(json!({
+        "full_text": chrono::Local::now().format("%H:%M").to_string()
+    }).to_string());
     println!("{}],", entries.join(","));
 }
 
@@ -169,7 +175,10 @@ async fn run_click_cmd(cmd: String) {
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() {
-    println!("{{\"version\":1,\"click_events\":true}}");
+    println!("{}", json!({
+        "version": 1,
+        "click_events": true
+    }));
     println!("[");
 
     let inputs = task::spawn(async {
