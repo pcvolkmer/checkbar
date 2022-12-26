@@ -24,6 +24,11 @@ url = "https://host2.example.com"
 name = "App 1"
 url = "https://app.example.com/actuator/health"
 check_type = "Actuator"
+
+[[checks]]
+name = "App 2"
+url = "tcp://app.example.com:12345"
+check_type = "Tcp"
 ----
 
 Each host or application to be checked consists of `name` and `url`.
@@ -33,8 +38,9 @@ You can optionally specify `check_type`:
 * `Html`: Default value, checks if a request is successful and returns HTTP OK - 200.
 * `Actuator`: Like `Html`, but checks if _Actuator_ shows that the application is up and running.
   ** `Up`: Actuator response indicates, application is up and running.
-  ** `Warn`: Got response but it is not Actuator health `UP` response or redirect.
+  ** `Warn`: Got response, but it is not Actuator health `UP` response or redirect.
   ** `Down`: No response.
+* `Tcp`: Checks if TCP connection to given host and port can be established
 
 To use more than one configuration, pass the config file location as first argument to the application.
 

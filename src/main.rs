@@ -1,10 +1,13 @@
+use reqwest::Url;
 use serde::Deserialize;
 use serde_json::json;
 use std::env;
 use std::fmt::{Display, Formatter, Result};
 use std::fs;
 use std::process;
+use std::str::FromStr;
 use std::time::Duration;
+use tokio::net::TcpStream;
 use tokio::task;
 
 #[derive(Deserialize)]
@@ -29,10 +32,11 @@ struct CheckConfig {
     click_cmd: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq)]
 enum CheckType {
     Http,
     Actuator,
+    Tcp,
 }
 
 #[derive(Deserialize)]
@@ -87,6 +91,33 @@ enum CheckState {
 }
 
 async fn check_host(check_config: &CheckConfig) -> CheckResult {
+    if check_config.check_type == Some(CheckType::Tcp) {
+        if let Ok(url) = Url::from_str(check_config.url.as_str()) {
+            if url.scheme() == "tcp" {
+                if url.host_str().is_some() && url.port().is_some() {
+                    let state = match TcpStream::connect(format!(
+                        "{}:{}",
+                        url.host_str().unwrap(),
+                        url.port().unwrap()
+                    ))
+                    .await
+                    {
+                        Ok(_) => CheckState::Up,
+                        _ => CheckState::Down,
+                    };
+                    return CheckResult {
+                        name: check_config.name.to_string(),
+                        state,
+                    };
+                }
+            }
+        }
+        return CheckResult {
+            name: check_config.name.to_string(),
+            state: CheckState::Down,
+        };
+    }
+
     let state = match reqwest::get(check_config.url.as_str()).await {
         Ok(r) => {
             if r.status().is_success() {
