@@ -2,14 +2,13 @@ mod checker;
 mod config;
 
 use std::process;
-use std::time::Duration;
 
 use serde::Deserialize;
 use serde_json::json;
 use tokio::task;
 
 use crate::checker::{ActuatorChecker, CheckResult, HttpChecker, TcpChecker};
-use crate::config::{get_config, CheckConfig, CheckType};
+use crate::config::{get_config, parse_duration, CheckConfig, CheckType};
 
 #[derive(Deserialize)]
 struct ClickEvent {
@@ -102,7 +101,7 @@ async fn main() {
         loop {
             let config = get_config();
             print_states(&config.checks).await;
-            std::thread::sleep(Duration::from_secs(config.interval.unwrap_or(60)));
+            std::thread::sleep(parse_duration(config.interval));
         }
     });
 

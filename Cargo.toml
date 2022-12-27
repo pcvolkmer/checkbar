@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 chrono = { version = "*", features = ["serde"] }
 dirs = "4"
+regex = "1.7"
 reqwest = { version = "*", features = ["json", "rustls-tls"], default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = "*"
