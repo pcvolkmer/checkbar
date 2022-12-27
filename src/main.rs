@@ -1,48 +1,15 @@
-use reqwest::Url;
+mod checker;
+mod config;
+
+use std::process;
+use std::time::Duration;
+
 use serde::Deserialize;
 use serde_json::json;
-use std::env;
-use std::fmt::{Display, Formatter, Result};
-use std::fs;
-use std::process;
-use std::str::FromStr;
-use std::time::Duration;
-use tokio::net::TcpStream;
 use tokio::task;
 
-#[derive(Deserialize)]
-struct Config {
-    interval: Option<u64>,
-    colors: Option<ColorConfig>,
-    checks: Vec<CheckConfig>,
-}
-
-#[derive(Deserialize)]
-struct ColorConfig {
-    up: String,
-    warn: String,
-    down: String,
-}
-
-#[derive(Deserialize)]
-struct CheckConfig {
-    name: String,
-    url: String,
-    check_type: Option<CheckType>,
-    click_cmd: Option<String>,
-}
-
-#[derive(Deserialize, PartialEq)]
-enum CheckType {
-    Http,
-    Actuator,
-    Tcp,
-}
-
-#[derive(Deserialize)]
-struct ActuatorResponse {
-    status: String,
-}
+use crate::checker::{ActuatorChecker, CheckResult, HttpChecker, TcpChecker};
+use crate::config::{get_config, CheckConfig, CheckType};
 
 #[derive(Deserialize)]
 struct ClickEvent {
@@ -50,101 +17,11 @@ struct ClickEvent {
     button: u8,
 }
 
-struct CheckResult {
-    name: String,
-    state: CheckState,
-}
-
-impl Display for CheckResult {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let color_config = match get_config().colors {
-            Some(color_config) => color_config,
-            None => ColorConfig {
-                up: String::from("#00FF00"),
-                warn: String::from("#FFFF00"),
-                down: String::from("#FF0000"),
-            },
-        };
-        let color = match &self.state {
-            CheckState::Up => color_config.up,
-            CheckState::Warn => color_config.warn,
-            CheckState::Down => color_config.down,
-        };
-
-        write!(
-            f,
-            "{}",
-            json!({
-                "full_text": self.name,
-                "name": self.name,
-                "separator_block_width": 16,
-                "color": color
-            })
-        )
-    }
-}
-
-enum CheckState {
-    Up,
-    Warn,
-    Down,
-}
-
 async fn check_host(check_config: &CheckConfig) -> CheckResult {
-    if check_config.check_type == Some(CheckType::Tcp) {
-        if let Ok(url) = Url::from_str(check_config.url.as_str()) {
-            if url.scheme() == "tcp" {
-                if url.host_str().is_some() && url.port().is_some() {
-                    let state = match TcpStream::connect(format!(
-                        "{}:{}",
-                        url.host_str().unwrap(),
-                        url.port().unwrap()
-                    ))
-                    .await
-                    {
-                        Ok(_) => CheckState::Up,
-                        _ => CheckState::Down,
-                    };
-                    return CheckResult {
-                        name: check_config.name.to_string(),
-                        state,
-                    };
-                }
-            }
-        }
-        return CheckResult {
-            name: check_config.name.to_string(),
-            state: CheckState::Down,
-        };
-    }
-
-    let state = match reqwest::get(check_config.url.as_str()).await {
-        Ok(r) => {
-            if r.status().is_success() {
-                match check_config.check_type {
-                    Some(CheckType::Actuator) => match r.json::<ActuatorResponse>().await {
-                        Ok(ar) => {
-                            if ar.status == "UP" {
-                                CheckState::Up
-                            } else {
-                                CheckState::Warn
-                            }
-                        }
-                        _ => CheckState::Warn,
-                    },
-                    // Default: HTTP
-                    _ => CheckState::Up,
-                }
-            } else {
-                CheckState::Warn
-            }
-        }
-        Err(_) => CheckState::Down,
-    };
-
-    CheckResult {
-        name: check_config.name.to_string(),
-        state,
+    match check_config.check_type {
+        Some(CheckType::Actuator) => ActuatorChecker::new(check_config).check().await,
+        Some(CheckType::Tcp) => TcpChecker::new(check_config).check().await,
+        _ => HttpChecker::new(check_config).check().await,
     }
 }
 
@@ -161,34 +38,6 @@ async fn print_states(check_configs: &[CheckConfig]) {
         .to_string(),
     );
     println!("{}],", entries.join(","));
-}
-
-fn get_config_file() -> String {
-    match env::args().nth(1) {
-        Some(config_file) => config_file,
-        None => format!(
-            "{}/.checkbar.toml",
-            dirs::home_dir().unwrap().to_str().unwrap_or("")
-        ),
-    }
-}
-
-fn get_config() -> Config {
-    match fs::read_to_string(get_config_file()) {
-        Ok(config) => match toml::from_str(config.as_str()) {
-            Ok(config) => config,
-            Err(_e) => Config {
-                interval: None,
-                colors: None,
-                checks: vec![],
-            },
-        },
-        Err(_) => Config {
-            interval: None,
-            colors: None,
-            checks: vec![],
-        },
-    }
 }
 
 async fn get_click_cmd(name: String) -> Option<String> {
