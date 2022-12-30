@@ -35,7 +35,12 @@ The value for `interval` can be set by using plain seconds or using units of `h`
 default to 60 seconds.
 
 ----
-# Update interval using value with units. Default value if not set is 60 sec.
+# Update interval using seconds as number.
+interval = 60
+
+# or ...
+
+# Update interval using value with units.
 interval = "2m 30s"
 ----
 
