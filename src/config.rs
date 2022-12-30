@@ -69,23 +69,25 @@ pub fn parse_duration(value: Option<String>) -> Duration {
         }
         _ => return Duration::from_secs(60),
     };
-    if let Ok(re) = Regex::new(r"^((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s?)?$") {
+    if let Ok(re) =
+        Regex::new(r"^((?P<hours>\d+)h\s*)?((?P<minutes>\d+)m\s*)?((?P<seconds>\d+)s?\s*)?$")
+    {
         if re.is_match(value) {
-            let parts = re.captures_iter(value).nth(0).unwrap();
+            let parts = re.captures_iter(value).next().unwrap();
             if let Some(hours) = parts.name("hours") {
-                result += match u64::from_str_radix(hours.as_str(), 10) {
+                result += match hours.as_str().parse::<u64>() {
                     Ok(value) => value * 60 * 60,
                     _ => 0,
                 };
             }
             if let Some(minutes) = parts.name("minutes") {
-                result += match u64::from_str_radix(minutes.as_str(), 10) {
+                result += match minutes.as_str().parse::<u64>() {
                     Ok(value) => value * 60,
                     _ => 0,
                 };
             }
             if let Some(seconds) = parts.name("seconds") {
-                result += match u64::from_str_radix(seconds.as_str(), 10) {
+                result += match seconds.as_str().parse::<u64>() {
                     Ok(value) => value,
                     _ => 0,
                 };
@@ -119,6 +121,18 @@ mod tests {
         assert_eq!(
             parse_duration(Some("90".to_string())),
             Duration::from_secs(90)
+        );
+    }
+
+    #[test]
+    fn test_should_parse_durations_with_whitespaces() {
+        assert_eq!(
+            parse_duration(Some("1m 30s".to_string())),
+            Duration::from_secs(90)
+        );
+        assert_eq!(
+            parse_duration(Some("1h 1m 1s".to_string())),
+            Duration::from_secs(3661)
         );
     }
 

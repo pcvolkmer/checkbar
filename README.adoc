@@ -36,7 +36,7 @@ default to 60 seconds.
 
 ----
 # Update interval using value with units. Default value if not set is 60 sec.
-interval = 2m30s
+interval = "2m 30s"
 ----
 
 Each host or application to be checked consists of `name` and `url`.
@@ -58,7 +58,7 @@ $ checkbar /etc/checkbar_example.toml
 
 === Colors
 
-To change the colors, use the following configuration. As an example the colors of the default configuration are shown.
+To change the colors, use the following configuration. As an example, the colors of the default configuration are shown.
 
 ----
 ...
