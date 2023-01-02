@@ -10,7 +10,8 @@ use serde::{Deserialize, Deserializer};
 pub struct Config {
     #[serde(default, deserialize_with = "deserialize_duration")]
     pub interval: Option<Duration>,
-    pub colors: Option<ColorConfig>,
+    #[serde(default)]
+    pub colors: ColorConfig,
     #[serde(default)]
     pub checks: Vec<CheckConfig>,
 }
@@ -20,6 +21,16 @@ pub struct ColorConfig {
     pub up: String,
     pub warn: String,
     pub down: String,
+}
+
+impl Default for ColorConfig {
+    fn default() -> Self {
+        Self {
+            up: String::from("#00FF00"),
+            warn: String::from("#FFFF00"),
+            down: String::from("#FF0000"),
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -53,13 +64,13 @@ pub fn get_config() -> Config {
             Ok(config) => config,
             Err(_e) => Config {
                 interval: None,
-                colors: None,
+                colors: ColorConfig::default(),
                 checks: vec![],
             },
         },
         Err(_) => Config {
             interval: None,
-            colors: None,
+            colors: ColorConfig::default(),
             checks: vec![],
         },
     }
@@ -193,6 +204,20 @@ mod tests {
         .unwrap();
 
         assert_eq!(config.checks.len(), 0);
+    }
+
+    #[test]
+    fn test_should_parse_config_with_default_colors() {
+        let config: Config = toml::from_str(
+            r#"
+                interval = "2m 3s"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(config.colors.up, "#00FF00".to_string());
+        assert_eq!(config.colors.warn, "#FFFF00".to_string());
+        assert_eq!(config.colors.down, "#FF0000".to_string());
     }
 
     #[test]

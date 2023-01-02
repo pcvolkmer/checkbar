@@ -2,13 +2,14 @@ mod actuator;
 mod http;
 mod tcp;
 
+use std::fmt::{Display, Formatter, Result};
+
+use serde_json::json;
+
 pub use crate::checker::actuator::Checker as ActuatorChecker;
 pub use crate::checker::http::Checker as HttpChecker;
 pub use crate::checker::tcp::Checker as TcpChecker;
-use crate::config;
 use crate::config::get_config;
-use serde_json::json;
-use std::fmt::{Display, Formatter, Result};
 
 pub struct CheckResult {
     pub name: String,
@@ -17,14 +18,7 @@ pub struct CheckResult {
 
 impl Display for CheckResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let color_config = match get_config().colors {
-            Some(color_config) => color_config,
-            None => config::ColorConfig {
-                up: String::from("#00FF00"),
-                warn: String::from("#FFFF00"),
-                down: String::from("#FF0000"),
-            },
-        };
+        let color_config = get_config().colors;
         let color = match &self.state {
             CheckState::Up => color_config.up,
             CheckState::Warn => color_config.warn,
