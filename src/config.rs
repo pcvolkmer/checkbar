@@ -11,6 +11,7 @@ pub struct Config {
     #[serde(default, deserialize_with = "deserialize_duration")]
     pub interval: Option<Duration>,
     pub colors: Option<ColorConfig>,
+    #[serde(default)]
     pub checks: Vec<CheckConfig>,
 }
 
@@ -180,6 +181,18 @@ mod tests {
         .unwrap();
 
         assert_eq!(config.interval, None);
+    }
+
+    #[test]
+    fn test_should_parse_config_without_checks() {
+        let config: Config = toml::from_str(
+            r#"
+                interval = "2m 3s"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(config.checks.len(), 0);
     }
 
     #[test]
