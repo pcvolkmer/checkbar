@@ -111,35 +111,26 @@ where
 }
 
 fn parse_duration(value: &str) -> Option<Duration> {
-    let mut result = 0;
+    let mut duration_in_secs = 0;
     if let Ok(re) =
         Regex::new(r"^((?P<hours>\d+)h\s*)?((?P<minutes>\d+)m\s*)?((?P<seconds>\d+)s?\s*)?$")
     {
         if re.is_match(value) {
             let parts = re.captures_iter(value).next().unwrap();
             if let Some(hours) = parts.name("hours") {
-                result += match hours.as_str().parse::<u64>() {
-                    Ok(value) => value * 60 * 60,
-                    _ => 0,
-                };
+                duration_in_secs += hours.as_str().parse::<u64>().unwrap_or(0) * 60 * 60
             }
             if let Some(minutes) = parts.name("minutes") {
-                result += match minutes.as_str().parse::<u64>() {
-                    Ok(value) => value * 60,
-                    _ => 0,
-                };
+                duration_in_secs += minutes.as_str().parse::<u64>().unwrap_or(0) * 60
             }
             if let Some(seconds) = parts.name("seconds") {
-                result += match seconds.as_str().parse::<u64>() {
-                    Ok(value) => value,
-                    _ => 0,
-                };
+                duration_in_secs += seconds.as_str().parse::<u64>().unwrap_or(0)
             }
         } else {
             return None;
         }
     }
-    Some(Duration::from_secs(result))
+    Some(Duration::from_secs(duration_in_secs))
 }
 
 #[cfg(test)]
