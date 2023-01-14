@@ -6,7 +6,7 @@ use regex::Regex;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 pub struct Config {
     #[serde(default, deserialize_with = "deserialize_duration")]
     pub interval: Option<Duration>,
@@ -14,6 +14,29 @@ pub struct Config {
     pub colors: ColorConfig,
     #[serde(default)]
     pub checks: Vec<CheckConfig>,
+}
+
+impl Config {
+    fn get_config_file() -> String {
+        match env::args().nth(1) {
+            Some(config_file) => config_file,
+            None => format!(
+                "{}/.checkbar.toml",
+                dirs::home_dir().unwrap().to_str().unwrap_or("")
+            ),
+        }
+    }
+
+    pub fn read() -> Self {
+        Self::read_file(Self::get_config_file().as_str())
+    }
+
+    pub fn read_file(filename: &str) -> Self {
+        match fs::read_to_string(filename) {
+            Ok(config) => toml::from_str(config.as_str()).unwrap_or_default(),
+            Err(_) => Config::default(),
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -46,34 +69,6 @@ pub enum CheckType {
     Http,
     Actuator,
     Tcp,
-}
-
-fn get_config_file() -> String {
-    match env::args().nth(1) {
-        Some(config_file) => config_file,
-        None => format!(
-            "{}/.checkbar.toml",
-            dirs::home_dir().unwrap().to_str().unwrap_or("")
-        ),
-    }
-}
-
-pub fn get_config() -> Config {
-    match fs::read_to_string(get_config_file()) {
-        Ok(config) => match toml::from_str(config.as_str()) {
-            Ok(config) => config,
-            Err(_e) => Config {
-                interval: None,
-                colors: ColorConfig::default(),
-                checks: vec![],
-            },
-        },
-        Err(_) => Config {
-            interval: None,
-            colors: ColorConfig::default(),
-            checks: vec![],
-        },
-    }
 }
 
 fn deserialize_duration<'de, D>(d: D) -> Result<Option<Duration>, D::Error>
@@ -209,6 +204,22 @@ mod tests {
         assert_eq!(config.colors.up, "#00FF00".to_string());
         assert_eq!(config.colors.warn, "#FFFF00".to_string());
         assert_eq!(config.colors.down, "#FF0000".to_string());
+    }
+
+    #[test]
+    fn test_should_read_and_parse_file() {
+        let config = Config::read_file("./tests/testconfig1.toml");
+        assert_eq!(config.interval, Some(Duration::from_secs(10)));
+        assert_eq!(config.checks.len(), 1);
+        assert_eq!(config.checks[0].name, "www");
+        assert_eq!(config.checks[0].url, "https://example.com");
+    }
+
+    #[test]
+    fn test_should_return_default_if_no_config_file() {
+        let config = Config::read_file("./tests/no_testconfig.toml");
+        assert_eq!(config.interval, None);
+        assert_eq!(config.checks.len(), 0);
     }
 
     #[test]

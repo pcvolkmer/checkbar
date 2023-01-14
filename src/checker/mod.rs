@@ -9,7 +9,7 @@ use serde_json::json;
 pub use crate::checker::actuator::Checker as ActuatorChecker;
 pub use crate::checker::http::Checker as HttpChecker;
 pub use crate::checker::tcp::Checker as TcpChecker;
-use crate::config::get_config;
+use crate::config::Config;
 
 pub struct CheckResult {
     pub name: String,
@@ -18,7 +18,7 @@ pub struct CheckResult {
 
 impl Display for CheckResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let color_config = get_config().colors;
+        let color_config = Config::read().colors;
         let color = match &self.state {
             CheckState::Up => color_config.up,
             CheckState::Warn => color_config.warn,

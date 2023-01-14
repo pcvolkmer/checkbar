@@ -6,7 +6,7 @@ use serde_json::json;
 use tokio::task;
 
 use crate::checker::{ActuatorChecker, CheckResult, HttpChecker, TcpChecker};
-use crate::config::{get_config, CheckConfig, CheckType};
+use crate::config::{CheckConfig, CheckType, Config};
 
 mod checker;
 mod config;
@@ -41,7 +41,7 @@ async fn print_states(check_configs: &[CheckConfig]) {
 }
 
 async fn get_click_cmd(name: String) -> Option<String> {
-    for check in get_config().checks {
+    for check in Config::read().checks {
         if check.name == name {
             return check.click_cmd;
         }
@@ -100,7 +100,7 @@ async fn main() {
 
     let checks = task::spawn(async {
         loop {
-            let config = get_config();
+            let config = Config::read();
             print_states(&config.checks).await;
             let interval = match config.interval {
                 Some(value) => value,
