@@ -1,6 +1,8 @@
+use reqwest::Response;
+use serde::Deserialize;
+
 use crate::checker::{CheckResult, CheckState};
 use crate::config::CheckConfig;
-use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct ActuatorResponse {
@@ -17,29 +19,22 @@ impl Checker<'_> {
     }
 
     pub async fn check(&self) -> CheckResult {
-        let state = match reqwest::get(self.check_config.url.as_str()).await {
-            Ok(r) => {
-                if r.status().is_success() {
-                    match r.json::<ActuatorResponse>().await {
-                        Ok(ar) => {
-                            if ar.status == "UP" {
-                                CheckState::Up
-                            } else {
-                                CheckState::Warn
-                            }
-                        }
-                        _ => CheckState::Warn,
-                    }
-                } else {
-                    CheckState::Warn
-                }
-            }
-            Err(_) => CheckState::Down,
-        };
-
         CheckResult {
             name: self.check_config.name.to_string(),
-            state,
+            state: match reqwest::get(self.check_config.url.as_str()).await {
+                Ok(r) => Self::check_response(r).await,
+                Err(_) => CheckState::Down,
+            },
         }
+    }
+
+    async fn check_response(response: Response) -> CheckState {
+        if response.status().is_success() {
+            return match response.json::<ActuatorResponse>().await {
+                Ok(ar) if ar.status == "UP" => CheckState::Up,
+                _ => CheckState::Warn,
+            };
+        }
+        CheckState::Warn
     }
 }
