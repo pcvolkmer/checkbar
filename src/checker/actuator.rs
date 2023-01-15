@@ -1,7 +1,7 @@
 use reqwest::Response;
 use serde::Deserialize;
 
-use crate::checker::{CheckResult, CheckState};
+use crate::checker::{check_http_response, CheckResult, CheckState};
 use crate::config::CheckConfig;
 
 #[derive(Deserialize)]
@@ -19,13 +19,7 @@ impl Checker<'_> {
     }
 
     pub async fn check(&self) -> CheckResult {
-        CheckResult {
-            name: self.check_config.name.to_string(),
-            state: match reqwest::get(self.check_config.url.as_str()).await {
-                Ok(r) => Self::check_response(r).await,
-                Err(_) => CheckState::Down,
-            },
-        }
+        check_http_response(self.check_config, Self::check_response).await
     }
 
     async fn check_response(response: Response) -> CheckState {

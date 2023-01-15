@@ -3,13 +3,15 @@ mod http;
 mod tcp;
 
 use std::fmt::{Display, Formatter, Result};
+use std::future::Future;
 
+use reqwest::Response;
 use serde_json::json;
 
 pub use crate::checker::actuator::Checker as ActuatorChecker;
 pub use crate::checker::http::Checker as HttpChecker;
 pub use crate::checker::tcp::Checker as TcpChecker;
-use crate::config::Config;
+use crate::config::{CheckConfig, Config};
 
 pub struct CheckResult {
     pub name: String,
@@ -42,4 +44,17 @@ pub enum CheckState {
     Up,
     Warn,
     Down,
+}
+
+async fn check_http_response<F>(check_config: &CheckConfig, f: fn(Response) -> F) -> CheckResult
+where
+    F: Future<Output = CheckState>,
+{
+    CheckResult {
+        name: check_config.name.to_string(),
+        state: match reqwest::get(check_config.url.as_str()).await {
+            Ok(r) => f(r).await,
+            Err(_) => CheckState::Down,
+        },
+    }
 }
