@@ -62,3 +62,47 @@ pub trait HttpBasedChecker {
 
     fn get_check_config(&self) -> &CheckConfig;
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::checker::*;
+
+    #[test]
+    fn test_should_display_check_result_up() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Up,
+        };
+
+        assert_eq!(
+            check_result.to_string(),
+            r##"{"color":"#00FF00","full_text":"test","name":"test","separator_block_width":16}"##
+        )
+    }
+
+    #[test]
+    fn test_should_display_check_result_warn() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Warn,
+        };
+
+        assert_eq!(
+            check_result.to_string(),
+            r##"{"color":"#FFFF00","full_text":"test","name":"test","separator_block_width":16}"##
+        )
+    }
+
+    #[test]
+    fn test_should_display_check_result_down() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Down,
+        };
+
+        assert_eq!(
+            check_result.to_string(),
+            r##"{"color":"#FF0000","full_text":"test","name":"test","separator_block_width":16}"##
+        )
+    }
+}
