@@ -1,6 +1,7 @@
+use async_trait::async_trait;
 use reqwest::Response;
 
-use crate::checker::{check_http_response, CheckResult, CheckState};
+use crate::checker::{CheckState, HttpBasedChecker};
 use crate::config::CheckConfig;
 
 pub struct Checker<'a> {
@@ -11,16 +12,19 @@ impl Checker<'_> {
     pub fn new(check_config: &CheckConfig) -> Checker {
         Checker { check_config }
     }
+}
 
-    pub async fn check(&self) -> CheckResult {
-        check_http_response(self.check_config, Self::check_response).await
-    }
-
+#[async_trait]
+impl HttpBasedChecker for Checker<'_> {
     async fn check_response(response: Response) -> CheckState {
         if response.status().is_success() {
             CheckState::Up
         } else {
             CheckState::Warn
         }
+    }
+
+    fn get_check_config(&self) -> &CheckConfig {
+        self.check_config
     }
 }

@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde_json::json;
 use tokio::task;
 
-use crate::checker::{ActuatorChecker, CheckResult, HttpChecker, TcpChecker};
+use crate::checker::{ActuatorChecker, CheckResult, HttpBasedChecker, HttpChecker, TcpChecker};
 use crate::config::{CheckConfig, CheckType, Config};
 
 mod checker;

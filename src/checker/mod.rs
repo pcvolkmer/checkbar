@@ -2,8 +2,8 @@ mod actuator;
 mod http;
 mod tcp;
 
+use async_trait::async_trait;
 use std::fmt::{Display, Formatter, Result};
-use std::future::Future;
 
 use reqwest::Response;
 use serde_json::json;
@@ -46,15 +46,19 @@ pub enum CheckState {
     Down,
 }
 
-async fn check_http_response<F>(check_config: &CheckConfig, f: fn(Response) -> F) -> CheckResult
-where
-    F: Future<Output = CheckState>,
-{
-    CheckResult {
-        name: check_config.name.to_string(),
-        state: match reqwest::get(check_config.url.as_str()).await {
-            Ok(r) => f(r).await,
-            Err(_) => CheckState::Down,
-        },
+#[async_trait]
+pub trait HttpBasedChecker {
+    async fn check(&self) -> CheckResult {
+        CheckResult {
+            name: self.get_check_config().name.to_string(),
+            state: match reqwest::get(self.get_check_config().url.as_str()).await {
+                Ok(r) => Self::check_response(r).await,
+                Err(_) => CheckState::Down,
+            },
+        }
     }
+
+    async fn check_response(response: Response) -> CheckState;
+
+    fn get_check_config(&self) -> &CheckConfig;
 }
