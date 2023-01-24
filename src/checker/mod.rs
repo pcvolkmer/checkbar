@@ -40,6 +40,7 @@ impl Display for CheckResult {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum CheckState {
     Up,
     Warn,

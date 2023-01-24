@@ -36,3 +36,51 @@ impl HttpBasedChecker for Checker<'_> {
         self.check_config
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::checker::actuator::Checker;
+    use crate::checker::{CheckState, HttpBasedChecker};
+    use hyper::Response as hyper_Response;
+    use reqwest::Response;
+    use serde_json::json;
+
+    #[tokio::test]
+    async fn test_should_return_up_state() {
+        let response = Response::from(
+            hyper_Response::builder()
+                .status(200)
+                .body(json!({"status":"UP"}).to_string())
+                .unwrap(),
+        );
+        let check_state = Checker::check_response(response).await;
+
+        assert_eq!(check_state, CheckState::Up)
+    }
+
+    #[tokio::test]
+    async fn test_should_return_warn_state_on_status_not_up() {
+        let response = Response::from(
+            hyper_Response::builder()
+                .status(200)
+                .body(json!({"status":"DOWN"}).to_string())
+                .unwrap(),
+        );
+        let check_state = Checker::check_response(response).await;
+
+        assert_eq!(check_state, CheckState::Warn)
+    }
+
+    #[tokio::test]
+    async fn test_should_return_warn_state_on_response_not_success() {
+        let response = Response::from(
+            hyper_Response::builder()
+                .status(404)
+                .body(String::from("Actuator Response Not Found"))
+                .unwrap(),
+        );
+        let check_state = Checker::check_response(response).await;
+
+        assert_eq!(check_state, CheckState::Warn)
+    }
+}

@@ -80,6 +80,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "dirs",
+ "hyper",
  "regex",
  "reqwest",
  "serde",

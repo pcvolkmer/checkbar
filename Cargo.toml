@@ -17,6 +17,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 toml = "*"
 
 [dev-dependencies]
+hyper = "*"
 serde_derive = "1"
 
 [profile.release]
