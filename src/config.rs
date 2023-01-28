@@ -88,7 +88,7 @@ where
         where
             E: Error,
         {
-            Ok(format!("{}", v))
+            Ok(format!("{v}"))
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
