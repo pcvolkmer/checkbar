@@ -11,7 +11,15 @@ use serde_json::json;
 pub use crate::checker::actuator::Checker as ActuatorChecker;
 pub use crate::checker::http::Checker as HttpChecker;
 pub use crate::checker::tcp::Checker as TcpChecker;
-use crate::config::{CheckConfig, Config};
+use crate::config::{CheckConfig, CheckType, Config};
+
+pub async fn check_host(check_config: &CheckConfig) -> CheckResult {
+    match check_config.check_type {
+        Some(CheckType::Actuator) => ActuatorChecker::new(check_config).check().await,
+        Some(CheckType::Tcp) => TcpChecker::new(check_config).check().await,
+        _ => HttpChecker::new(check_config).check().await,
+    }
+}
 
 pub struct CheckResult {
     pub name: String,

@@ -1,3 +1,6 @@
+mod checker;
+mod config;
+
 use std::process;
 use std::time::Duration;
 
@@ -5,24 +8,13 @@ use serde::Deserialize;
 use serde_json::json;
 use tokio::task;
 
-use crate::checker::{ActuatorChecker, CheckResult, HttpBasedChecker, HttpChecker, TcpChecker};
-use crate::config::{CheckConfig, CheckType, Config};
-
-mod checker;
-mod config;
+use crate::checker::check_host;
+use crate::config::{CheckConfig, Config};
 
 #[derive(Deserialize)]
 struct ClickEvent {
     name: String,
     button: u8,
-}
-
-async fn check_host(check_config: &CheckConfig) -> CheckResult {
-    match check_config.check_type {
-        Some(CheckType::Actuator) => ActuatorChecker::new(check_config).check().await,
-        Some(CheckType::Tcp) => TcpChecker::new(check_config).check().await,
-        _ => HttpChecker::new(check_config).check().await,
-    }
 }
 
 async fn print_states(check_configs: &[CheckConfig]) {
