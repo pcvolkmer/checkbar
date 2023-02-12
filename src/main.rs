@@ -59,6 +59,21 @@ async fn run_click_cmd(cmd: String) {
     };
 }
 
+fn read_click_event() -> Result<ClickEvent, ()> {
+    let stdin = std::io::stdin();
+    let mut input = String::new();
+
+    if stdin.read_line(&mut input).is_ok() {
+        // Return click event after removing leading comma
+        if let Ok(click_event) =
+            serde_json::from_str::<ClickEvent>(input.replace(",{", "{").as_str())
+        {
+            return Ok(click_event);
+        }
+    }
+    Err(())
+}
+
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() {
     println!(
@@ -71,22 +86,8 @@ async fn main() {
     println!("[");
 
     let inputs = task::spawn(async {
-        let stdin = std::io::stdin();
         loop {
-            let mut input = String::new();
-
-            if stdin.read_line(&mut input).is_err() {
-                continue;
-            }
-
-            if input.is_empty() {
-                continue;
-            }
-
-            // Remove leading comma
-            let input = input.replace(",{", "{");
-
-            if let Ok(click_event) = serde_json::from_str::<ClickEvent>(input.as_str()) {
+            if let Ok(click_event) = read_click_event() {
                 // Ignore click event if not left mouse button
                 if click_event.button != 1 {
                     continue;
