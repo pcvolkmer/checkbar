@@ -8,7 +8,7 @@ use serde::Deserialize;
 use serde_json::json;
 use serde_repr::Deserialize_repr;
 
-use crate::checker::check_host;
+use checker::check_host;
 
 #[derive(Debug, Deserialize_repr, PartialEq)]
 #[repr(u8)]
@@ -58,7 +58,7 @@ pub async fn run_click_cmd(cmd: String) {
     };
 }
 
-pub fn read_click_event() -> Result<ClickEvent, ()> {
+pub fn read_click_event() -> Result<ClickEvent, String> {
     let stdin = std::io::stdin();
     let mut input = String::new();
 
@@ -70,7 +70,7 @@ pub fn read_click_event() -> Result<ClickEvent, ()> {
             return Ok(click_event);
         }
     }
-    Err(())
+    Err("Cannot read click event".to_string())
 }
 
 #[cfg(test)]
