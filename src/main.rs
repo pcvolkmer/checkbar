@@ -6,15 +6,24 @@ use std::time::Duration;
 
 use serde::Deserialize;
 use serde_json::json;
+use serde_repr::Deserialize_repr;
 use tokio::task;
 
 use crate::checker::check_host;
 use crate::config::{CheckConfig, Config};
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize_repr, PartialEq)]
+#[repr(u8)]
+enum MouseButton {
+    Left = 1,
+    Middle = 2,
+    Right = 3,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
 struct ClickEvent {
     name: String,
-    button: u8,
+    button: MouseButton,
 }
 
 async fn print_states(check_configs: &[CheckConfig]) {
@@ -81,7 +90,7 @@ async fn main() {
         loop {
             if let Ok(click_event) = read_click_event() {
                 // Ignore click event if not left mouse button
-                if click_event.button != 1 {
+                if click_event.button != MouseButton::Left {
                     continue;
                 };
                 if let Some(click_cmd) = get_click_cmd(click_event.name).await {
@@ -104,4 +113,27 @@ async fn main() {
     });
 
     let _r = tokio::join!(inputs, checks);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{ClickEvent, MouseButton};
+
+    #[test]
+    fn test_should_deserialize_click_event() {
+        let actual = serde_json::from_str::<ClickEvent>(r#"{"name": "test", "button": 1}"#);
+        let expected = ClickEvent {
+            name: "test".to_string(),
+            button: MouseButton::Left,
+        };
+
+        if actual.is_err() {
+            println!("{:?}", actual)
+        }
+
+        assert!(actual.is_ok());
+
+        let actual = actual.unwrap();
+        assert_eq!(actual, expected);
+    }
 }
