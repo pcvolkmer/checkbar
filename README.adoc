@@ -31,8 +31,13 @@ url = "tcp://app.example.com:12345"
 check_type = "Tcp"
 ----
 
-The value for `interval` can be set by using plain seconds or using units of `h`, `m` and `s`. Unparseable values will
-default to 60 seconds.
+The value for `interval` can be set by using plain seconds or using units. Accepted units:
+
+* h, hour, hours
+* m, min, mins, minutes, minutes
+* s, sec, secs, second, seconds
+
+Unparseable values will default to 60 seconds.
 
 ----
 # Update interval using seconds as number.
