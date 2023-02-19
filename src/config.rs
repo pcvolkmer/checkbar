@@ -6,9 +6,12 @@ use std::{env, fs};
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
 
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 pub struct Config {
-    #[serde(default, deserialize_with = "deserialize_duration")]
+    #[serde(
+        default = "default_duration",
+        deserialize_with = "deserialize_duration"
+    )]
     pub interval: Option<Duration>,
     #[serde(default)]
     pub colors: ColorConfig,
@@ -35,6 +38,16 @@ impl Config {
         match fs::read_to_string(filename) {
             Ok(config) => toml::from_str(config.as_str()).unwrap_or_default(),
             Err(_) => Config::default(),
+        }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            interval: Some(Duration::from_secs(60)),
+            colors: ColorConfig::default(),
+            checks: vec![],
         }
     }
 }
@@ -69,6 +82,10 @@ pub enum CheckType {
     Http,
     Actuator,
     Tcp,
+}
+
+fn default_duration() -> Option<Duration> {
+    Some(Duration::from_secs(60))
 }
 
 fn deserialize_duration<'de, D>(d: D) -> Result<Option<Duration>, D::Error>
@@ -144,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn test_should_parse_config_without_interval() {
+    fn test_should_parse_config_and_use_default_interval() {
         let config: Config = toml::from_str(
             r#"
                 [[checks]]
@@ -154,7 +171,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(config.interval, None);
+        assert_eq!(config.interval, Some(Duration::from_secs(60)));
     }
 
     #[test]
@@ -195,7 +212,10 @@ mod tests {
     #[test]
     fn test_should_return_default_if_no_config_file() {
         let config = Config::read_file("./tests/no_testconfig.toml");
-        assert_eq!(config.interval, None);
+        assert_eq!(config.interval, Some(Duration::from_secs(60)));
+        assert_eq!(config.colors.up, "#00FF00".to_string());
+        assert_eq!(config.colors.warn, "#FFFF00".to_string());
+        assert_eq!(config.colors.down, "#FF0000".to_string());
         assert_eq!(config.checks.len(), 0);
     }
 }
