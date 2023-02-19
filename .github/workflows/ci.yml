@@ -20,4 +20,4 @@ jobs:
       - name: Run checks
         run: cargo clippy
       - name: Run tests
-        run: cargo test
+        run: cargo test --all
