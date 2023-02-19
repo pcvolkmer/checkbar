@@ -1,9 +1,37 @@
 use regex::Regex;
+use std::error::Error as ErrorTrait;
+use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
 
-pub fn parse_duration(value: &str) -> Option<Duration> {
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Error {
+    EmptyValue,
+    NotParseable(String),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::EmptyValue => write!(f, "EmptyValueError: Empty value found"),
+            Self::NotParseable(s) => write!(f, "NotParseableError: Cannot parse '{s}'"),
+        }
+    }
+}
+
+impl ErrorTrait for Error {
+    fn description(&self) -> &str {
+        match self {
+            Self::EmptyValue => "Empty value found",
+            Self::NotParseable(_) => "Not parsable",
+        }
+    }
+}
+
+pub fn parse(value: &str) -> Result<Duration, Error> {
     let mut duration_in_secs = 0;
-    if let Ok(re) = Regex::new(
+    if value.trim().is_empty() {
+        return Err(Error::EmptyValue);
+    } else if let Ok(re) = Regex::new(
         r"^((?P<hours>\d+)(h|hour|hours)\s*)?((?P<minutes>\d+)(m|min|mins|minute|minutes)\s*)?((?P<seconds>\d+)(s|sec|secs|second|seconds)?\s*)?$",
     ) {
         if re.is_match(value) {
@@ -17,11 +45,18 @@ pub fn parse_duration(value: &str) -> Option<Duration> {
             if let Some(seconds) = parts.name("seconds") {
                 duration_in_secs += seconds.as_str().parse::<u64>().unwrap_or(0)
             }
-        } else {
-            return None;
+            return Ok(Duration::from_secs(duration_in_secs));
         }
     }
-    Some(Duration::from_secs(duration_in_secs))
+    Err(Error::NotParseable(value.to_string()))
+}
+
+#[deprecated(note = "Please use `parse` instead")]
+pub fn parse_duration(value: &str) -> Option<Duration> {
+    match parse(value) {
+        Ok(duration) => Some(duration),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -38,13 +73,13 @@ mod tests {
 
     #[test]
     fn test_should_parse_durations() {
-        assert_eq!(parse_duration("1m30s"), Some(Duration::from_secs(90)));
-        assert_eq!(parse_duration("2m"), Some(Duration::from_secs(120)));
-        assert_eq!(parse_duration("90"), Some(Duration::from_secs(90)));
+        assert_eq!(parse("1m30s"), Ok(Duration::from_secs(90)));
+        assert_eq!(parse("2m"), Ok(Duration::from_secs(120)));
+        assert_eq!(parse("90"), Ok(Duration::from_secs(90)));
 
         multi_assert_eq!(
-            parse_duration,
-            Some(Duration::from_secs(3661)),
+            parse,
+            Ok(Duration::from_secs(3661)),
             "1h1m1s",
             "1hour1min1s",
             "1hour1mins1s",
@@ -58,12 +93,12 @@ mod tests {
 
     #[test]
     fn test_should_parse_durations_with_whitespaces() {
-        assert_eq!(parse_duration("1m 30s"), Some(Duration::from_secs(90)));
-        assert_eq!(parse_duration("1h 1m 1s"), Some(Duration::from_secs(3661)));
+        assert_eq!(parse("1m 30s"), Ok(Duration::from_secs(90)));
+        assert_eq!(parse("1h 1m 1s"), Ok(Duration::from_secs(3661)));
 
         multi_assert_eq!(
-            parse_duration,
-            Some(Duration::from_secs(3661)),
+            parse,
+            Ok(Duration::from_secs(3661)),
             "1h 1m 1s",
             "1hour 1min 1s",
             "1hour 1mins 1s",
@@ -77,7 +112,14 @@ mod tests {
 
     #[test]
     fn test_should_return_default_for_unparseable_durations() {
-        assert_eq!(parse_duration("invalid"), None);
-        assert_eq!(parse_duration("1x30m10q"), None);
+        assert_eq!(parse("   "), Err(Error::EmptyValue));
+        assert_eq!(
+            parse("invalid"),
+            Err(Error::NotParseable("invalid".to_string()))
+        );
+        assert_eq!(
+            parse("1x30m10q"),
+            Err(Error::NotParseable("1x30m10q".to_string()))
+        );
     }
 }
