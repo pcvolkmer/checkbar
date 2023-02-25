@@ -1,4 +1,4 @@
-use parse_duration::parse_duration;
+use parse_duration::parse;
 use std::fmt::Formatter;
 use std::time::Duration;
 use std::{env, fs};
@@ -12,7 +12,7 @@ pub struct Config {
         default = "default_duration",
         deserialize_with = "deserialize_duration"
     )]
-    pub interval: Option<Duration>,
+    pub interval: Duration,
     #[serde(default)]
     pub colors: ColorConfig,
     #[serde(default)]
@@ -45,7 +45,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            interval: Some(Duration::from_secs(60)),
+            interval: Duration::from_secs(60),
             colors: ColorConfig::default(),
             checks: vec![],
         }
@@ -84,11 +84,11 @@ pub enum CheckType {
     Tcp,
 }
 
-fn default_duration() -> Option<Duration> {
-    Some(Duration::from_secs(60))
+fn default_duration() -> Duration {
+    Duration::from_secs(60)
 }
 
-fn deserialize_duration<'de, D>(d: D) -> Result<Option<Duration>, D::Error>
+fn deserialize_duration<'de, D>(d: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -117,7 +117,13 @@ where
     }
 
     match d.deserialize_string(StringVisitor) {
-        Ok(value) => Ok(parse_duration(value.as_str())),
+        Ok(value) => {
+            return if let Ok(duration) = parse(value.as_str()) {
+                Ok(duration)
+            } else {
+                Ok(Duration::from_secs(60))
+            }
+        }
         Err(err) => Err(err),
     }
 }
@@ -141,7 +147,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(config.interval, Some(Duration::from_secs(123)));
+        assert_eq!(config.interval, Duration::from_secs(123));
     }
 
     #[test]
@@ -157,7 +163,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(config.interval, Some(Duration::from_secs(123)));
+        assert_eq!(config.interval, Duration::from_secs(123));
     }
 
     #[test]
@@ -171,7 +177,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(config.interval, Some(Duration::from_secs(60)));
+        assert_eq!(config.interval, Duration::from_secs(60));
     }
 
     #[test]
@@ -203,7 +209,7 @@ mod tests {
     #[test]
     fn test_should_read_and_parse_file() {
         let config = Config::read_file("./tests/testconfig1.toml");
-        assert_eq!(config.interval, Some(Duration::from_secs(10)));
+        assert_eq!(config.interval, Duration::from_secs(10));
         assert_eq!(config.checks.len(), 1);
         assert_eq!(config.checks[0].name, "www");
         assert_eq!(config.checks[0].url, "https://example.com");
@@ -212,7 +218,7 @@ mod tests {
     #[test]
     fn test_should_return_default_if_no_config_file() {
         let config = Config::read_file("./tests/no_testconfig.toml");
-        assert_eq!(config.interval, Some(Duration::from_secs(60)));
+        assert_eq!(config.interval, Duration::from_secs(60));
         assert_eq!(config.colors.up, "#00FF00".to_string());
         assert_eq!(config.colors.warn, "#FFFF00".to_string());
         assert_eq!(config.colors.down, "#FF0000".to_string());
