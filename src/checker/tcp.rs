@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use reqwest::Url;
+use tokio::io::Interest;
 use tokio::net::TcpStream;
 
 use crate::checker::{CheckResult, CheckState};
@@ -25,7 +26,21 @@ impl Checker<'_> {
                 ))
                 .await
                 {
-                    Ok(_) => CheckState::Up,
+                    Ok(tcp_stream) => {
+                        match tcp_stream
+                            .ready(Interest::READABLE | Interest::WRITABLE)
+                            .await
+                        {
+                            Ok(ready) => {
+                                if !ready.is_empty() {
+                                    CheckState::Up
+                                } else {
+                                    CheckState::Warn
+                                }
+                            }
+                            _ => CheckState::Warn,
+                        }
+                    }
                     _ => CheckState::Down,
                 };
                 return CheckResult {
