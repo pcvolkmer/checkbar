@@ -26,5 +26,6 @@ serde_derive = "1"
 [profile.release]
 opt-level = "s"
 codegen-units = 1
-lto = "thin"
-strip = "debuginfo"
+lto = true
+strip = true
+panic = "abort"
