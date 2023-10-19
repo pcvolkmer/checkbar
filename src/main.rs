@@ -1,6 +1,7 @@
 use checkbar::{get_click_cmd, print_states, read_click_event, run_click_cmd, Config, MouseButton};
 use serde_json::json;
 use tokio::task;
+use tokio::time::sleep;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() {
@@ -31,7 +32,7 @@ async fn main() {
         loop {
             let config = Config::read();
             print_states(&config.checks).await;
-            std::thread::sleep(config.interval);
+            let _ = sleep(config.interval).await;
         }
     });
 
