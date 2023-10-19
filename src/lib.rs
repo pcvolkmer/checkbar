@@ -24,15 +24,15 @@ pub struct ClickEvent {
     pub button: MouseButton,
 }
 
-pub async fn print_states(check_configs: &[CheckConfig]) {
+pub async fn print_states(config: &Config) {
     print!("[");
     let mut entries = vec![];
-    for check_config in check_configs {
+    for check_config in &config.checks {
         entries.push(format!("{}", check_host(check_config).await));
     }
     entries.push(
         json!({
-            "full_text": chrono::Local::now().format("%H:%M").to_string()
+            "full_text": chrono::Local::now().format(config.time_format.as_str()).to_string()
         })
         .to_string(),
     );

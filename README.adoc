@@ -12,6 +12,9 @@ You should create a configuration file `.checkbar.toml` in your home directory, 
 # Update interval in seconds. Default value if not set is 60 sec.
 interval = 60
 
+# Time format (optional), defaults to "%R" (= "%H:%M)"
+time_format = "%H:%M:%S" # = "%T"
+
 [[checks]]
 name = "Host 1"
 url = "https://host1.example.com"
@@ -48,6 +51,9 @@ interval = 60
 # Update interval using value with units.
 interval = "2m 30s"
 ----
+
+The value for `time_format` is used to set the time format to be shown. It defaults to `%R`.
+For available options, see: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
 
 Each host or application to be checked consists of `name` and `url`.
 

@@ -31,7 +31,7 @@ async fn main() {
     let checks = task::spawn(async {
         loop {
             let config = Config::read();
-            print_states(&config.checks).await;
+            print_states(&config).await;
             let _ = sleep(config.interval).await;
         }
     });

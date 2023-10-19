@@ -13,6 +13,8 @@ pub struct Config {
         deserialize_with = "deserialize_duration"
     )]
     pub interval: Duration,
+    #[serde(default = "Config::default_time_format")]
+    pub time_format: String,
     #[serde(default)]
     pub colors: ColorConfig,
     #[serde(default)]
@@ -20,6 +22,10 @@ pub struct Config {
 }
 
 impl Config {
+    fn default_time_format() -> String {
+        return "%R".to_string();
+    }
+
     fn get_config_file() -> String {
         match env::args().nth(1) {
             Some(config_file) => config_file,
@@ -46,6 +52,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             interval: Duration::from_secs(60),
+            time_format: Self::default_time_format(),
             colors: ColorConfig::default(),
             checks: vec![],
         }
