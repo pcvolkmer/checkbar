@@ -3,6 +3,7 @@ mod http;
 mod tcp;
 
 use async_trait::async_trait;
+use console::{style, Term};
 use std::fmt::{Display, Formatter, Result};
 
 use reqwest::Response;
@@ -28,6 +29,18 @@ pub struct CheckResult {
 
 impl Display for CheckResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        if Term::stdout().is_term() {
+            return write!(
+                f,
+                "{}",
+                match &self.state {
+                    CheckState::Up => style(&self.name).green(),
+                    CheckState::Warn => style(&self.name).yellow(),
+                    CheckState::Down => style(&self.name).red(),
+                }
+            );
+        }
+
         let color_config = Config::read().colors;
         let color = match &self.state {
             CheckState::Up => color_config.up,

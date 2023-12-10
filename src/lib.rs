@@ -1,6 +1,8 @@
 mod checker;
 mod config;
 
+use console::{style, Term};
+use std::io::Write;
 use std::process;
 
 pub use config::{CheckConfig, Config};
@@ -25,8 +27,21 @@ pub struct ClickEvent {
 }
 
 pub async fn print_states(config: &Config) {
-    print!("[");
     let mut entries = vec![];
+    if Term::stdout().is_term() {
+        for check_config in &config.checks {
+            entries.push(format!("{}", check_host(check_config).await));
+        }
+        entries.push(
+            chrono::Local::now()
+                .format(config.time_format.as_str())
+                .to_string(),
+        );
+        println!("{}", entries.join(&style(" | ").black().to_string()));
+        return;
+    }
+
+    print!("[");
     for check_config in &config.checks {
         entries.push(format!("{}", check_host(check_config).await));
     }
@@ -53,7 +68,6 @@ pub async fn run_click_cmd(cmd: String) {
         .stdin(process::Stdio::piped())
         .spawn()
     {
-        use std::io::Write;
         let _ = child.stdin.as_mut().unwrap().write_all(cmd.as_bytes());
     };
 }

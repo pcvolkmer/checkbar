@@ -87,10 +87,14 @@ down = "#FF0000"
 
 The color configuration is optional. If used, all colors must be specified.
 
+Colors are not available if running in terminal mode.
+
 === Execute commands
 
 You can also specify a command to be executed when a mouse click occurs on a checked host.
 Use `click_cmd` to specify the command to be executed, e.g.
+
+This is not available if running in terminal mode.
 
 ----
 ...
