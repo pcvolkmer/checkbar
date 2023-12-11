@@ -1,6 +1,7 @@
 use checkbar::{get_click_cmd, print_states, read_click_event, run_click_cmd, Config, MouseButton};
 use console::Term;
 use serde_json::json;
+use std::process::exit;
 use tokio::task;
 use tokio::time::sleep;
 
@@ -8,6 +9,11 @@ use tokio::time::sleep;
 async fn main() {
     if Term::stdout().is_term() {
         let _ = Term::stdout().hide_cursor();
+        let _ = ctrlc::set_handler(|| {
+            let _ = Term::stdout().show_cursor();
+            println!();
+            exit(1);
+        });
     } else {
         println!(
             "{}",
@@ -37,6 +43,7 @@ async fn main() {
         loop {
             let config = Config::read();
             print_states(&config).await;
+            let _ = Term::stdout().hide_cursor();
             let _ = sleep(config.interval).await;
         }
     });
