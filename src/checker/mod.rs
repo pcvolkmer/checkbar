@@ -96,10 +96,14 @@ mod tests {
             state: CheckState::Up,
         };
 
-        assert_eq!(
-            check_result.to_string(),
-            r##"{"color":"#00FF00","full_text":"test","name":"test","separator_block_width":16}"##
-        )
+        if Term::stdout().is_term() {
+            assert_eq!(check_result.to_string(), "\u{1b}[32mtest\u{1b}[0m")
+        } else {
+            assert_eq!(
+                check_result.to_string(),
+                r##"{"color":"#00FF00","full_text":"test","name":"test","separator_block_width":16}"##
+            )
+        }
     }
 
     #[test]
@@ -109,10 +113,14 @@ mod tests {
             state: CheckState::Warn,
         };
 
-        assert_eq!(
-            check_result.to_string(),
-            r##"{"color":"#FFFF00","full_text":"test","name":"test","separator_block_width":16}"##
-        )
+        if Term::stdout().is_term() {
+            assert_eq!(check_result.to_string(), "\u{1b}[33mtest\u{1b}[0m")
+        } else {
+            assert_eq!(
+                check_result.to_string(),
+                r##"{"color":"#FFFF00","full_text":"test","name":"test","separator_block_width":16}"##
+            )
+        }
     }
 
     #[test]
@@ -122,9 +130,13 @@ mod tests {
             state: CheckState::Down,
         };
 
-        assert_eq!(
-            check_result.to_string(),
-            r##"{"color":"#FF0000","full_text":"test","name":"test","separator_block_width":16}"##
-        )
+        if Term::stdout().is_term() {
+            assert_eq!(check_result.to_string(), "\u{1b}[31mtest\u{1b}[0m")
+        } else {
+            assert_eq!(
+                check_result.to_string(),
+                r##"{"color":"#FF0000","full_text":"test","name":"test","separator_block_width":16}"##
+            )
+        }
     }
 }
