@@ -1,11 +1,7 @@
-mod actuator;
-mod http;
-mod tcp;
+use std::fmt::{Display, Formatter, Result};
 
 use async_trait::async_trait;
 use console::{style, Term};
-use std::fmt::{Display, Formatter, Result};
-
 use reqwest::Response;
 use serde_json::json;
 
@@ -13,6 +9,10 @@ pub use crate::checker::actuator::Checker as ActuatorChecker;
 pub use crate::checker::http::Checker as HttpChecker;
 pub use crate::checker::tcp::Checker as TcpChecker;
 use crate::config::{CheckConfig, CheckType, Config};
+
+mod actuator;
+mod http;
+mod tcp;
 
 pub async fn check_host(check_config: &CheckConfig) -> CheckResult {
     match check_config.check_type {
@@ -22,25 +22,25 @@ pub async fn check_host(check_config: &CheckConfig) -> CheckResult {
     }
 }
 
+trait ToNonTerminalString: ToString {
+    fn to_string(&self) -> String;
+}
+trait ToNonColoredTerminalString: ToString {
+    fn to_string(&self) -> String;
+}
+
+trait ToColoredTerminalString: ToString {
+    fn to_string(&self) -> String;
+}
+
 pub struct CheckResult {
     pub name: String,
     pub state: CheckState,
 }
 
-impl Display for CheckResult {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        if Term::stdout().is_term() {
-            return write!(
-                f,
-                "{}",
-                match &self.state {
-                    CheckState::Up => style(&self.name).green(),
-                    CheckState::Warn => style(&self.name).yellow(),
-                    CheckState::Down => style(&self.name).red(),
-                }
-            );
-        }
-
+impl ToNonTerminalString for CheckResult {
+    #[inline]
+    fn to_string(&self) -> String {
         let color_config = Config::read().colors;
         let color = match &self.state {
             CheckState::Up => color_config.up,
@@ -48,8 +48,7 @@ impl Display for CheckResult {
             CheckState::Down => color_config.down,
         };
 
-        write!(
-            f,
+        format!(
             "{}",
             json!({
                 "full_text": self.name,
@@ -58,6 +57,39 @@ impl Display for CheckResult {
                 "color": color
             })
         )
+    }
+}
+
+impl ToNonColoredTerminalString for CheckResult {
+    #[inline]
+    fn to_string(&self) -> String {
+        self.name.to_string()
+    }
+}
+
+impl ToColoredTerminalString for CheckResult {
+    #[inline]
+    fn to_string(&self) -> String {
+        format!(
+            "{}",
+            match &self.state {
+                CheckState::Up => style(&self.name).green().force_styling(true),
+                CheckState::Warn => style(&self.name).yellow().force_styling(true),
+                CheckState::Down => style(&self.name).red().force_styling(true),
+            }
+        )
+    }
+}
+
+impl Display for CheckResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let term = Term::stdout();
+        if term.is_term() && term.features().colors_supported() {
+            return write!(f, "{}", ToColoredTerminalString::to_string(self));
+        } else if term.is_term() && !term.features().colors_supported() {
+            return write!(f, "{}", ToNonColoredTerminalString::to_string(self));
+        }
+        write!(f, "{}", ToNonTerminalString::to_string(self))
     }
 }
 
@@ -90,20 +122,85 @@ mod tests {
     use crate::checker::*;
 
     #[test]
+    fn test_should_display_check_result_up_in_term() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Up,
+        };
+
+        assert_eq!(ToNonColoredTerminalString::to_string(&check_result), "test")
+    }
+
+    #[test]
+    fn test_should_display_check_result_warn_in_term() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Warn,
+        };
+
+        assert_eq!(ToNonColoredTerminalString::to_string(&check_result), "test")
+    }
+
+    #[test]
+    fn test_should_display_check_result_down_in_term() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Down,
+        };
+
+        assert_eq!(ToNonColoredTerminalString::to_string(&check_result), "test")
+    }
+
+    #[test]
+    fn test_should_display_check_result_up_in_colored_term() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Up,
+        };
+
+        assert_eq!(
+            ToColoredTerminalString::to_string(&check_result),
+            "\u{1b}[32mtest\u{1b}[0m"
+        )
+    }
+
+    #[test]
+    fn test_should_display_check_result_warn_in_colored_term() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Warn,
+        };
+
+        assert_eq!(
+            ToColoredTerminalString::to_string(&check_result),
+            "\u{1b}[33mtest\u{1b}[0m"
+        )
+    }
+
+    #[test]
+    fn test_should_display_check_result_down_in_colored_term() {
+        let check_result = CheckResult {
+            name: "test".to_string(),
+            state: CheckState::Down,
+        };
+
+        assert_eq!(
+            ToColoredTerminalString::to_string(&check_result),
+            "\u{1b}[31mtest\u{1b}[0m"
+        )
+    }
+
+    #[test]
     fn test_should_display_check_result_up() {
         let check_result = CheckResult {
             name: "test".to_string(),
             state: CheckState::Up,
         };
 
-        if Term::stdout().is_term() {
-            assert_eq!(check_result.to_string(), "\u{1b}[32mtest\u{1b}[0m")
-        } else {
-            assert_eq!(
-                check_result.to_string(),
-                r##"{"color":"#00FF00","full_text":"test","name":"test","separator_block_width":16}"##
-            )
-        }
+        assert_eq!(
+            ToNonTerminalString::to_string(&check_result),
+            r##"{"color":"#00FF00","full_text":"test","name":"test","separator_block_width":16}"##
+        )
     }
 
     #[test]
@@ -113,14 +210,10 @@ mod tests {
             state: CheckState::Warn,
         };
 
-        if Term::stdout().is_term() {
-            assert_eq!(check_result.to_string(), "\u{1b}[33mtest\u{1b}[0m")
-        } else {
-            assert_eq!(
-                check_result.to_string(),
-                r##"{"color":"#FFFF00","full_text":"test","name":"test","separator_block_width":16}"##
-            )
-        }
+        assert_eq!(
+            ToNonTerminalString::to_string(&check_result),
+            r##"{"color":"#FFFF00","full_text":"test","name":"test","separator_block_width":16}"##
+        )
     }
 
     #[test]
@@ -130,13 +223,9 @@ mod tests {
             state: CheckState::Down,
         };
 
-        if Term::stdout().is_term() {
-            assert_eq!(check_result.to_string(), "\u{1b}[31mtest\u{1b}[0m")
-        } else {
-            assert_eq!(
-                check_result.to_string(),
-                r##"{"color":"#FF0000","full_text":"test","name":"test","separator_block_width":16}"##
-            )
-        }
+        assert_eq!(
+            ToNonTerminalString::to_string(&check_result),
+            r##"{"color":"#FF0000","full_text":"test","name":"test","separator_block_width":16}"##
+        )
     }
 }
