@@ -23,7 +23,7 @@ pub struct Config {
 
 impl Config {
     fn default_time_format() -> String {
-        return "%R".to_string();
+        "%R".to_string()
     }
 
     fn get_config_file() -> String {
