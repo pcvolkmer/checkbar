@@ -27,13 +27,12 @@ impl Config {
     }
 
     fn get_config_file() -> String {
-        match env::args().nth(1) {
-            Some(config_file) => config_file,
-            None => format!(
+        env::args().nth(1).unwrap_or_else(|| {
+            format!(
                 "{}/.checkbar.toml",
                 dirs::home_dir().unwrap().to_str().unwrap_or("")
-            ),
-        }
+            )
+        })
     }
 
     pub fn read() -> Self {
