@@ -18,10 +18,9 @@ impl Checker<'_> {
 impl HttpBasedChecker for Checker<'_> {
     async fn check_response(response: Response) -> CheckState {
         if response.status().is_success() {
-            CheckState::Up
-        } else {
-            CheckState::Warn
+            return CheckState::Up;
         }
+        CheckState::Warn
     }
 
     fn get_check_config(&self) -> &CheckConfig {
