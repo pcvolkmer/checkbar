@@ -22,7 +22,7 @@ toml = "0.8"
 parse_duration = { path = "./parse_duration" }
 
 [dev-dependencies]
-http = "0.2"
+http = "1.1"
 serde_derive = "1.0"
 
 [profile.release]
