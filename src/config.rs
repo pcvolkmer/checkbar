@@ -100,7 +100,7 @@ where
 {
     struct StringVisitor;
 
-    impl<'de> Visitor<'de> for StringVisitor {
+    impl Visitor<'_> for StringVisitor {
         type Value = String;
 
         fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
@@ -124,7 +124,7 @@ where
 
     match d.deserialize_string(StringVisitor) {
         Ok(value) => {
-            return if let Ok(duration) = parse(value.as_str()) {
+            if let Ok(duration) = parse(value.as_str()) {
                 Ok(duration)
             } else {
                 Ok(Duration::from_secs(60))
