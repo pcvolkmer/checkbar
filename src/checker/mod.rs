@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter, Result};
 
-use async_trait::async_trait;
 use console::{style, Term};
 use reqwest::Response;
 use serde_json::json;
@@ -100,7 +99,6 @@ pub enum CheckState {
     Down,
 }
 
-#[async_trait]
 pub trait HttpBasedChecker {
     async fn check(&self) -> CheckResult {
         CheckResult {

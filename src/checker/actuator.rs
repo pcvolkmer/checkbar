@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use reqwest::Response;
 use serde::Deserialize;
 
@@ -20,7 +19,6 @@ impl Checker<'_> {
     }
 }
 
-#[async_trait]
 impl HttpBasedChecker for Checker<'_> {
     async fn check_response(response: Response) -> CheckState {
         if response.status().is_success() {
